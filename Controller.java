@@ -3,15 +3,32 @@ package swing;
 import javax.swing.*;
 
 public class Controller {
+	//public tools
+	public static void warningPane(String message,String title){
+		JOptionPane.showMessageDialog(null, message, title, JOptionPane.PLAIN_MESSAGE);
+		/*
+		 * print module should be added later
+		 */
+	}
+	
+	public static void statusChange(int newStatus){
+		
+	}
+	
+	//public tools end
+	
+	//controller tools
+	public static void renewStatus(){
+		
+	}
+	
 	public static void appendToText(JTextPane TextField,String str){
 		str=TextField.getText()+str+"\n";
 		TextField.setText(str);
 		return;
 	}
+	//controller tools end
 	
-	public static void warningPane(String message,String title){
-		JOptionPane.showMessageDialog(null, message, title, JOptionPane.PLAIN_MESSAGE);
-	}
 	
 	//buttons
 	public static void localPort_Change_btn(JTextField LocalPortInput,JLabel ViewLabel,JTextPane TextField){

@@ -1,10 +1,18 @@
 package swing;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 public class Model {
 	private static int localPort;
-	private static String localAddress;
+	//private static String localAddress;
 	private static int remotePort;
 	private static String remoteAddress;
+	private static ServerSocket serverSocket;
+	private static Socket socket;
 	private static Thread sender;
 	private static Thread listener;
 	private static ViewWithSwing windowEntity;
@@ -12,11 +20,9 @@ public class Model {
 	private static int status;
 	/*
 	 * 0:started
-	 * 100:listener on awaiting connection
-	 * 201:sender on and request sent
-	 * 202:sender built up a connection with remote host and awaiting feedback to listener
-	 * 211:Received a request and listener built up a connection, trying to send a feedback to remote
-	 * 300:FullDuplex communication
+	 * 1:listening
+	 * 2:send request
+	 * 3:connection ready
 	*/
 
 	private static ListMonitor listMonitor;
@@ -24,7 +30,7 @@ public class Model {
 	public static void initialize(){
 		localPort=1520;
 		remotePort=1520;
-		localAddress="127.0.0.1";
+		//localAddress="127.0.0.1";
 		remoteAddress="127.0.0.2";
 		
 		//initialize windowEntity
@@ -40,6 +46,72 @@ public class Model {
 		
 		System.out.println("Initialization completed.");
 	}
+	
+	//connection module
+	private static void ConnectionBuilder(){
+		int retry=0;
+		try {
+			serverSocket=new ServerSocket(localPort);
+		} catch (IOException e1) {//test
+			e1.printStackTrace();
+		}
+		while(true){//build up connection
+	        try{//check status before next step
+	            if(status==1)socket=Model.serverSocket.accept();
+	            else if(status==2)socket=new Socket(remoteAddress, remotePort);
+	            else Controller.warningPane("Unknown status error occurs when connecting", "Status error");
+	            break;
+        	} catch (IOException e){
+        		if(status==1)try {
+					Thread.sleep(1000);//listener retry every 1 sec
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+        		else if(status==2&&retry<15){//listener can retry unlimited times, but sender can only retry 20 times for each send order
+        			try {
+    					Thread.sleep(1000);//sender retry every 1 sec
+    				} catch (InterruptedException e1) {
+    					e1.printStackTrace();
+    				} finally{
+    					retry++;
+    				}
+        		}
+        		else if(status==2&&retry>15){
+        			String errorMsg="Remote host \""+ remoteAddress +":"+ remotePort +"\"unreachable";
+        			Controller.warningPane(errorMsg, "Connection error");
+        			status=1;//reset status
+        		}
+        		else Controller.warningPane("Unknown status error occurs when connecting", "Status error");
+			}
+	    }
+		if(socket!=null)status=3;
+	}
+	
+	private class Sender implements Runnable{
+		public void run() {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
+	
+	private class Listener implements Runnable{
+		public void run() {
+	        
+			
+			while(true){
+	            System.out.println("Connected:"+socket.getInetAddress()+":"+socket.getPort());
+	            try {
+					BufferedReader incomingMessage=new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				} catch (IOException e) {
+					e.printStackTrace();//test
+				}
+	            String Msg="";
+			}
+		}
+		
+	}
+	//connection module end
 	
 	public static boolean startListener(){
 		if(status!=0){
@@ -74,7 +146,7 @@ public class Model {
 			 */
 			
 			//if succeeded
-			status=;
+			//status=;
 			return true;
 		}
 		else return false;
