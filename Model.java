@@ -15,7 +15,6 @@ public class Model {
 	private static Socket socket;
 	private static Thread sender;
 	private static Thread listener;
-	private static ViewWithSwing windowEntity;
 	
 	private static int status;
 	/*
@@ -27,19 +26,16 @@ public class Model {
 
 	private static ListMonitor listMonitor;
 	
+	private static final String STATUS_ERR="Unknown status error occured.";
+	private static final String CONNECTION_ERR="Unknown connection error occured. Retry connection procedure later.";
+	
 	public static void initialize(){
 		localPort=1520;
 		remotePort=1520;
 		//localAddress="127.0.0.1";
 		remoteAddress="127.0.0.2";
-		
-		//initialize windowEntity
-		windowEntity=new ViewWithSwing();
-		windowEntity.setSize(512, 502);
-		windowEntity.setVisible(true);
-		windowEntity.setLocation(1920/2-windowEntity.getHeight()/2, 1080/2-windowEntity.getWidth()/2);//1920*1080should be change into screen size
-		
-		status=0;
+		Controller.initialize();				
+		setStatus(0);
 		listMonitor=new ListMonitor();
 		listMonitor.first=null;
 		listMonitor.last=null;
@@ -59,7 +55,7 @@ public class Model {
 	        try{//check status before next step
 	            if(status==1)socket=Model.serverSocket.accept();
 	            else if(status==2)socket=new Socket(remoteAddress, remotePort);
-	            else Controller.warningPane("Unknown status error occurs when connecting", "Status error");
+	            else Controller.warningPane(STATUS_ERR, "Status error");
 	            break;
         	} catch (IOException e){
         		if(status==1)try {
@@ -80,22 +76,28 @@ public class Model {
         			String errorMsg="Remote host \""+ remoteAddress +":"+ remotePort +"\"unreachable";
         			Controller.warningPane(errorMsg, "Connection error");
         			status=1;//reset status
+        			Controller.statusChange(status);
         		}
-        		else Controller.warningPane("Unknown status error occurs when connecting", "Status error");
+        		else Controller.warningPane(STATUS_ERR, "Status error");
 			}
 	    }
-		if(socket!=null)status=3;
+		if(socket!=null&&socket.isConnected()){
+			setStatus(3);
+			/*
+			 * !!!!!!!!!!!!!!!!!!!!!!!!!!  MsgSender and MsgListener initialize at here  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			 */
+		}
+		else Controller.warningPane(CONNECTION_ERR, "Connection error");
 	}
 	
-	private class Sender implements Runnable{
+	private class MsgSender implements Runnable{
 		public void run() {
-			// TODO Auto-generated method stub
 			
 		}
 		
 	}
 	
-	private class Listener implements Runnable{
+	private class MsgListener implements Runnable{
 		public void run() {
 	        
 			
@@ -111,61 +113,15 @@ public class Model {
 		}
 		
 	}
-	//connection module end
 	
-	public static boolean startListener(){
-		if(status!=0){
-			String errorMsg="Current status:"+ status +", a listener has already been instantiated or unknown exception.";
-			Controller.warningPane(errorMsg, "Status error");//must not instantiate a listener at later steps
-			return false;
-		}
-		
-		//if succeeded
-		status=100;
-		return true;
+	
+	//internal tools
+	private static void setStatus(int status){
+		Model.status=status;
+		Controller.statusChange(Model.status);
 	}
 	
-	public static boolean startSender(){
-		if(status!=100||status!=211){
-			String errorMsg="Current status:"+ status +", a listener must be instantiated before instantiating a sender or unknown exception.";
-			Controller.warningPane(errorMsg, "Status error");//a listener must be instantiated before instantiating a sender 
-			return false;
-		}
-		else if(status==100){
-			/*
-			 * some codes about start a sender
-			 */
-			
-			//if succeeded
-			status=201;
-			return true;
-		}
-		else if(status==211){
-			/*
-			 * some codes about start a sender
-			 */
-			
-			//if succeeded
-			//status=;
-			return true;
-		}
-		else return false;
-	}
-
-	public static void addCacheObj(String newMsg){
-		synchronized(listMonitor){
-			if(listMonitor.last!=null){
-				listMonitor.last.next=new CacheObj(newMsg);//update the last cache in list
-				listMonitor.last=listMonitor.last.next;//update the listMonitor.last
-			}
-			else{//if there has no data, then new() and link with the first and the last
-				listMonitor.first=new CacheObj(newMsg);
-				listMonitor.last=listMonitor.first;
-			}
-		}
-	}
-	
-	public static String readCache(){
+	private static String readCache(){
 		String result="";
 		synchronized(listMonitor){
 			while(listMonitor.first!=null){
@@ -179,11 +135,41 @@ public class Model {
 		return result;
 	}
 	
+	
+	
+	//external interfaces
+	public static void PortListening(){//set status 1, and create a server socket to wait for connection requests
+		if(status==0||status==2)setStatus(1);
+        else if(status==1);//Do nothing for same status
+        else Controller.warningPane(STATUS_ERR, "Status error");
+	}
+	
+	public static void SendRequest(){//set status 2, and create a socket to try sending connection requests to remote host
+		if(status==0||status==1)setStatus(2);
+		else if(status==2);//Do nothing for same status
+		else Controller.warningPane(STATUS_ERR, "Status error");
+	}
+
+	public static void addCacheObj(String newMsg){
+		synchronized(listMonitor){
+			if(listMonitor.last!=null){
+				listMonitor.last.next=new CacheObj(newMsg);//update last cache to the latest one
+				listMonitor.last=listMonitor.last.next;//update the listMonitor.last
+			}
+			else{//if there has no data, then new() and link with the first and the last
+				listMonitor.first=new CacheObj(newMsg);
+				listMonitor.last=listMonitor.first;
+			}
+		}
+	}
+	
 	public static void setPort(boolean isLocal,int port){//method for setting port numbers
 		if(isLocal)localPort=port;
 		else remotePort=port;
 	}
 	
+	
+	//external tools
 	public static boolean checkPortInput(String str){//Input check
 		int portNumber;
 		//Check whether input is an integer or not
@@ -191,8 +177,6 @@ public class Model {
 			portNumber=Integer.parseInt(str);
 		}
 		catch(Exception e){
-			/*str="Invalid input:"+str;
-			JOptionPane.showMessageDialog(null, str, "waring", JOptionPane.PLAIN_MESSAGE);*/
 			Controller.warningPane("Invalid input", "Input error");
 			return false;
 		}
@@ -200,7 +184,6 @@ public class Model {
 		//Check whether valid port number
 		if(portNumber>=1024 && portNumber<=65535)return true;
 		else{
-			//JOptionPane.showMessageDialog(null, , "waring", JOptionPane.PLAIN_MESSAGE);
 			Controller.warningPane("Invalid port number(must between 1024-65535)", "Input error");
 			return false;
 		}

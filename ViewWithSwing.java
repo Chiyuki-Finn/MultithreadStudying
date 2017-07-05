@@ -24,11 +24,25 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import javax.swing.JTabbedPane;
 
 public class ViewWithSwing extends JFrame{
-	public JTextField RemoteIPAddress_Change_Input;
-	public JTextField RemotePort_Change_Input;
-	public JTextField LocalPort_Change_Input;
+	public JTextPane textPane;
+	
+	public JTextField remoteIPAddress_Change_Input;
+	public JTextField remotePort_Change_Input;
+	public JTextField localPort_Change_Input;
+	
+	public JButton remoteSettings_Change_btn;//btn that click to confirm changes about remote IP and port
+	public JButton localPort_Change_btn;//btn that click to confirm changes about local port
+	public JButton listener_btn;//btn which initiates listener(status 1)
+	public JButton sendRequest_btn;//btn which initiates sender(status 2)
+	public JButton remoteDisconnect_btn;//btn which stops any current operation including listening(status 1), sending(status 2)and connected/communicating(status 3)
+	
+	public JLabel connectionStatus_Get;//label which shows current status
+	public JLabel remoteIPAddress_Get;//label which shows current remote IP address
+	public JLabel remotePort_Get;//label which shows current remote port
+	
 	public ViewWithSwing() {
 		setTitle("Title");
 		getContentPane().setBackground(UIManager.getColor("Button.background"));
@@ -36,315 +50,321 @@ public class ViewWithSwing extends JFrame{
 		
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		JTextPane TextField = new JTextPane();
-		TextField.setBounds(10, 10, 236, 444);
-		getContentPane().add(TextField);
-		
-		JPanel RightControl = new JPanel();
-		RightControl.setBounds(256, 10, 230, 444);
-		getContentPane().add(RightControl);
-		
-		JPanel RemoteSettings = new JPanel();
-		RemoteSettings.setToolTipText("");
-		RemoteSettings.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Remote Host Settings", TitledBorder.LEFT, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		
-		JPanel LocalSettings = new JPanel();
-		LocalSettings.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Local Settings", TitledBorder.LEFT, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		
-		JPanel ConnectionControl = new JPanel();
-		ConnectionControl.setBorder(new TitledBorder(null, "Connection Control", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		GroupLayout gl_RightControl = new GroupLayout(RightControl);
-		gl_RightControl.setHorizontalGroup(
-			gl_RightControl.createParallelGroup(Alignment.TRAILING)
-				.addGroup(gl_RightControl.createSequentialGroup()
-					.addGroup(gl_RightControl.createParallelGroup(Alignment.LEADING)
-						.addComponent(RemoteSettings, GroupLayout.PREFERRED_SIZE, 230, GroupLayout.PREFERRED_SIZE)
-						.addComponent(LocalSettings, 0, 0, Short.MAX_VALUE)
-						.addComponent(ConnectionControl, GroupLayout.PREFERRED_SIZE, 230, Short.MAX_VALUE))
-					.addContainerGap())
-		);
-		gl_RightControl.setVerticalGroup(
-			gl_RightControl.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_RightControl.createSequentialGroup()
-					.addComponent(RemoteSettings, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(LocalSettings, GroupLayout.PREFERRED_SIZE, 96, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(ConnectionControl, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(58, Short.MAX_VALUE))
-		);
-		
-		JPanel panel = new JPanel();
-		GroupLayout gl_ConnectionControl = new GroupLayout(ConnectionControl);
-		gl_ConnectionControl.setHorizontalGroup(
-			gl_ConnectionControl.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_ConnectionControl.createSequentialGroup()
-					.addComponent(panel, GroupLayout.PREFERRED_SIZE, 218, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-		);
-		gl_ConnectionControl.setVerticalGroup(
-			gl_ConnectionControl.createParallelGroup(Alignment.LEADING)
-				.addComponent(panel, GroupLayout.DEFAULT_SIZE, 155, Short.MAX_VALUE)
-		);
-		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[]{112, 95, 0};
-		gbl_panel.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0};
-		gbl_panel.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		gbl_panel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
-		panel.setLayout(gbl_panel);
-		
-		JLabel ConnectionStatus = new JLabel("Status:");
-		GridBagConstraints gbc_ConnectionStatus = new GridBagConstraints();
-		gbc_ConnectionStatus.fill = GridBagConstraints.HORIZONTAL;
-		gbc_ConnectionStatus.insets = new Insets(0, 0, 5, 5);
-		gbc_ConnectionStatus.gridx = 0;
-		gbc_ConnectionStatus.gridy = 0;
-		panel.add(ConnectionStatus, gbc_ConnectionStatus);
-		
-		JLabel ConnectionStatus_Get = new JLabel("uninitialized");
-		GridBagConstraints gbc_ConnectionStatus_Get = new GridBagConstraints();
-		gbc_ConnectionStatus_Get.insets = new Insets(0, 0, 5, 0);
-		gbc_ConnectionStatus_Get.fill = GridBagConstraints.HORIZONTAL;
-		gbc_ConnectionStatus_Get.gridx = 1;
-		gbc_ConnectionStatus_Get.gridy = 0;
-		panel.add(ConnectionStatus_Get, gbc_ConnectionStatus_Get);
-		
-		JLabel RemoteIPAddress = new JLabel("Remote IP:");
-		GridBagConstraints gbc_RemoteIPAddress = new GridBagConstraints();
-		gbc_RemoteIPAddress.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemoteIPAddress.insets = new Insets(0, 0, 5, 5);
-		gbc_RemoteIPAddress.gridx = 0;
-		gbc_RemoteIPAddress.gridy = 1;
-		panel.add(RemoteIPAddress, gbc_RemoteIPAddress);
-		
-		JLabel lblNewLabel_1 = new JLabel("uninitialized");
-		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
-		gbc_lblNewLabel_1.fill = GridBagConstraints.HORIZONTAL;
-		gbc_lblNewLabel_1.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNewLabel_1.gridx = 1;
-		gbc_lblNewLabel_1.gridy = 1;
-		panel.add(lblNewLabel_1, gbc_lblNewLabel_1);
-		
-		JLabel RemotePort = new JLabel("Remote port:");
-		GridBagConstraints gbc_RemotePort = new GridBagConstraints();
-		gbc_RemotePort.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemotePort.insets = new Insets(0, 0, 5, 5);
-		gbc_RemotePort.gridx = 0;
-		gbc_RemotePort.gridy = 2;
-		panel.add(RemotePort, gbc_RemotePort);
-		
-		JLabel lblNewLabel_3 = new JLabel("uninitialized");
-		GridBagConstraints gbc_lblNewLabel_3 = new GridBagConstraints();
-		gbc_lblNewLabel_3.fill = GridBagConstraints.HORIZONTAL;
-		gbc_lblNewLabel_3.insets = new Insets(0, 0, 5, 0);
-		gbc_lblNewLabel_3.gridx = 1;
-		gbc_lblNewLabel_3.gridy = 2;
-		panel.add(lblNewLabel_3, gbc_lblNewLabel_3);
-		
-		JLabel Listener = new JLabel("Launch listener");
-		GridBagConstraints gbc_Listener = new GridBagConstraints();
-		gbc_Listener.anchor = GridBagConstraints.WEST;
-		gbc_Listener.insets = new Insets(0, 0, 5, 5);
-		gbc_Listener.gridx = 0;
-		gbc_Listener.gridy = 3;
-		panel.add(Listener, gbc_Listener);
-		
-		//Listener btn event
-		JButton Listener_btn = new JButton("Launch");
-		Listener_btn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-			}
-		});
-		Listener_btn.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-			}
-		});
-		GridBagConstraints gbc_Listener_btn = new GridBagConstraints();
-		gbc_Listener_btn.insets = new Insets(0, 0, 5, 0);
-		gbc_Listener_btn.fill = GridBagConstraints.HORIZONTAL;
-		gbc_Listener_btn.gridx = 1;
-		gbc_Listener_btn.gridy = 3;
-		panel.add(Listener_btn, gbc_Listener_btn);
-		
-		//Request sending
-		JButton SendRequest_btn = new JButton("Send");
-		SendRequest_btn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		SendRequest_btn.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-			}
-		});
-		
-		JLabel SendRequest = new JLabel("Send request");
-		GridBagConstraints gbc_SendRequest = new GridBagConstraints();
-		gbc_SendRequest.anchor = GridBagConstraints.WEST;
-		gbc_SendRequest.insets = new Insets(0, 0, 5, 5);
-		gbc_SendRequest.gridx = 0;
-		gbc_SendRequest.gridy = 4;
-		panel.add(SendRequest, gbc_SendRequest);
-		GridBagConstraints gbc_SendRequest_btn = new GridBagConstraints();
-		gbc_SendRequest_btn.insets = new Insets(0, 0, 5, 0);
-		gbc_SendRequest_btn.fill = GridBagConstraints.HORIZONTAL;
-		gbc_SendRequest_btn.gridx = 1;
-		gbc_SendRequest_btn.gridy = 4;
-		panel.add(SendRequest_btn, gbc_SendRequest_btn);
-		
-		JLabel RemoteDisconnect = new JLabel("Disconnect");
-		GridBagConstraints gbc_RemoteDisconnect = new GridBagConstraints();
-		gbc_RemoteDisconnect.anchor = GridBagConstraints.WEST;
-		gbc_RemoteDisconnect.insets = new Insets(0, 0, 0, 5);
-		gbc_RemoteDisconnect.gridx = 0;
-		gbc_RemoteDisconnect.gridy = 5;
-		panel.add(RemoteDisconnect, gbc_RemoteDisconnect);
-		
-		JButton RemoteDisconnect_btn = new JButton("Disconnect");
-		GridBagConstraints gbc_RemoteDisconnect_btn = new GridBagConstraints();
-		gbc_RemoteDisconnect_btn.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemoteDisconnect_btn.gridx = 1;
-		gbc_RemoteDisconnect_btn.gridy = 5;
-		panel.add(RemoteDisconnect_btn, gbc_RemoteDisconnect_btn);
-		ConnectionControl.setLayout(gl_ConnectionControl);
-		
-		JPanel LocalForm = new JPanel();
-		GroupLayout gl_LocalSettings = new GroupLayout(LocalSettings);
-		gl_LocalSettings.setHorizontalGroup(
-			gl_LocalSettings.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_LocalSettings.createSequentialGroup()
-					.addComponent(LocalForm, GroupLayout.DEFAULT_SIZE, 218, Short.MAX_VALUE)
-					.addContainerGap())
-		);
-		gl_LocalSettings.setVerticalGroup(
-			gl_LocalSettings.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_LocalSettings.createSequentialGroup()
-					.addComponent(LocalForm, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(105, Short.MAX_VALUE))
-		);
-		GridBagLayout gbl_LocalForm = new GridBagLayout();
-		gbl_LocalForm.columnWidths = new int[]{78, 135, 0};
-		gbl_LocalForm.rowHeights = new int[]{15, 21, 23, 0};
-		gbl_LocalForm.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
-		gbl_LocalForm.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
-		LocalForm.setLayout(gbl_LocalForm);
-		
-		JLabel LocalPort = new JLabel("Current Port:");
-		GridBagConstraints gbc_LocalPort = new GridBagConstraints();
-		gbc_LocalPort.fill = GridBagConstraints.HORIZONTAL;
-		gbc_LocalPort.insets = new Insets(0, 0, 5, 5);
-		gbc_LocalPort.gridx = 0;
-		gbc_LocalPort.gridy = 0;
-		LocalForm.add(LocalPort, gbc_LocalPort);
-		
-		JLabel LocalPort_Get = new JLabel("Default(1520)");
-		GridBagConstraints gbc_LocalPort_Get = new GridBagConstraints();
-		gbc_LocalPort_Get.fill = GridBagConstraints.HORIZONTAL;
-		gbc_LocalPort_Get.insets = new Insets(0, 0, 5, 0);
-		gbc_LocalPort_Get.gridx = 1;
-		gbc_LocalPort_Get.gridy = 0;
-		LocalForm.add(LocalPort_Get, gbc_LocalPort_Get);
-		
-		JLabel LocalPort_Change = new JLabel("Change port:");
-		GridBagConstraints gbc_LocalPort_Change = new GridBagConstraints();
-		gbc_LocalPort_Change.anchor = GridBagConstraints.WEST;
-		gbc_LocalPort_Change.insets = new Insets(0, 0, 5, 5);
-		gbc_LocalPort_Change.gridx = 0;
-		gbc_LocalPort_Change.gridy = 1;
-		LocalForm.add(LocalPort_Change, gbc_LocalPort_Change);
-		
-		LocalPort_Change_Input = new JTextField();
-		GridBagConstraints gbc_LocalPort_Change_Input = new GridBagConstraints();
-		gbc_LocalPort_Change_Input.fill = GridBagConstraints.HORIZONTAL;
-		gbc_LocalPort_Change_Input.insets = new Insets(0, 0, 5, 0);
-		gbc_LocalPort_Change_Input.gridx = 1;
-		gbc_LocalPort_Change_Input.gridy = 1;
-		LocalForm.add(LocalPort_Change_Input, gbc_LocalPort_Change_Input);
-		LocalPort_Change_Input.setColumns(10);
-		
-		//LocalPort_Change_btn
-		JButton LocalPort_Change_btn = new JButton("Confirm");
-		LocalPort_Change_btn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-			}
-		});
-		LocalPort_Change_btn.addMouseListener(new MouseAdapter() {	
-			//LocalPort_Change_btn clicked event
-			public void mouseClicked(MouseEvent e) {
-				swing.Controller.localPort_Change_btn(LocalPort_Change_Input,LocalPort_Get,TextField);
-			}
-		});
-		GridBagConstraints gbc_LocalPort_Change_btn = new GridBagConstraints();
-		gbc_LocalPort_Change_btn.gridx = 1;
-		gbc_LocalPort_Change_btn.gridy = 2;
-		LocalForm.add(LocalPort_Change_btn, gbc_LocalPort_Change_btn);
-		LocalSettings.setLayout(gl_LocalSettings);
-		
-		JPanel RemoteForm = new JPanel();
-		GridBagLayout gbl_RemoteForm = new GridBagLayout();
-		gbl_RemoteForm.columnWidths = new int[]{72, 135, 0};
-		gbl_RemoteForm.rowHeights = new int[]{21, 21, 0, 0};
-		gbl_RemoteForm.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		gbl_RemoteForm.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
-		RemoteForm.setLayout(gbl_RemoteForm);
-		
-		JLabel RemoteIPAddress_Change = new JLabel("IP address:");
-		GridBagConstraints gbc_RemoteIPAddress_Change = new GridBagConstraints();
-		gbc_RemoteIPAddress_Change.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemoteIPAddress_Change.insets = new Insets(0, 0, 5, 5);
-		gbc_RemoteIPAddress_Change.gridx = 0;
-		gbc_RemoteIPAddress_Change.gridy = 0;
-		RemoteForm.add(RemoteIPAddress_Change, gbc_RemoteIPAddress_Change);
-		
-		RemoteIPAddress_Change_Input = new JTextField();
-		GridBagConstraints gbc_RemoteIPAddress_Change_Input = new GridBagConstraints();
-		gbc_RemoteIPAddress_Change_Input.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemoteIPAddress_Change_Input.insets = new Insets(0, 0, 5, 0);
-		gbc_RemoteIPAddress_Change_Input.gridx = 1;
-		gbc_RemoteIPAddress_Change_Input.gridy = 0;
-		RemoteForm.add(RemoteIPAddress_Change_Input, gbc_RemoteIPAddress_Change_Input);
-		RemoteIPAddress_Change_Input.setColumns(10);
-		
-		JLabel RemotePort_Change = new JLabel("Remote port:");
-		GridBagConstraints gbc_RemotePort_Change = new GridBagConstraints();
-		gbc_RemotePort_Change.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemotePort_Change.insets = new Insets(0, 0, 5, 5);
-		gbc_RemotePort_Change.gridx = 0;
-		gbc_RemotePort_Change.gridy = 1;
-		RemoteForm.add(RemotePort_Change, gbc_RemotePort_Change);
-		
-		RemotePort_Change_Input = new JTextField();
-		GridBagConstraints gbc_RemotePort_Change_Input = new GridBagConstraints();
-		gbc_RemotePort_Change_Input.insets = new Insets(0, 0, 5, 0);
-		gbc_RemotePort_Change_Input.fill = GridBagConstraints.HORIZONTAL;
-		gbc_RemotePort_Change_Input.gridx = 1;
-		gbc_RemotePort_Change_Input.gridy = 1;
-		RemoteForm.add(RemotePort_Change_Input, gbc_RemotePort_Change_Input);
-		RemotePort_Change_Input.setColumns(10);
-		GroupLayout gl_RemoteSettings = new GroupLayout(RemoteSettings);
-		gl_RemoteSettings.setHorizontalGroup(
-			gl_RemoteSettings.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_RemoteSettings.createSequentialGroup()
-					.addComponent(RemoteForm, GroupLayout.PREFERRED_SIZE, 218, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap())
-		);
-		gl_RemoteSettings.setVerticalGroup(
-			gl_RemoteSettings.createParallelGroup(Alignment.LEADING)
-				.addComponent(RemoteForm, GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
-		);
-		
-		JButton RemoteSettings_Change_btn = new JButton("Confirm");
-		RemoteSettings_Change_btn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-			}
-		});
-		GridBagConstraints gbc_RemoteSettings_Change_btn = new GridBagConstraints();
-		gbc_RemoteSettings_Change_btn.gridx = 1;
-		gbc_RemoteSettings_Change_btn.gridy = 2;
-		RemoteForm.add(RemoteSettings_Change_btn, gbc_RemoteSettings_Change_btn);
-		RemoteSettings.setLayout(gl_RemoteSettings);
-		RightControl.setLayout(gl_RightControl);
+		//JTextPane TextPane = new JTextPane();
+		textPane = new JTextPane();
+		textPane.setBounds(10, 10, 236, 444);
+		getContentPane().add(textPane);
+						
+						JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+						tabbedPane.setBounds(256, 10, 230, 443);
+						getContentPane().add(tabbedPane);
+						
+						JPanel connectionSettings = new JPanel();
+						tabbedPane.addTab("Settings", null, connectionSettings, null);
+						
+						JPanel remoteSettings = new JPanel();
+						remoteSettings.setToolTipText("");
+						remoteSettings.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Remote Host Settings", TitledBorder.LEFT, TitledBorder.TOP, null, new Color(0, 0, 0)));
+						
+						JPanel localSettings = new JPanel();
+						localSettings.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Local Settings", TitledBorder.LEFT, TitledBorder.TOP, null, new Color(0, 0, 0)));
+						
+						JPanel connectionControl = new JPanel();
+						connectionControl.setBorder(new TitledBorder(null, "Connection Control", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+						GroupLayout gl_connectionSettings = new GroupLayout(connectionSettings);
+						gl_connectionSettings.setHorizontalGroup(
+							gl_connectionSettings.createParallelGroup(Alignment.TRAILING)
+								.addGroup(gl_connectionSettings.createSequentialGroup()
+									.addGroup(gl_connectionSettings.createParallelGroup(Alignment.TRAILING)
+										.addComponent(connectionControl, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 230, Short.MAX_VALUE)
+										.addComponent(remoteSettings, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 230, GroupLayout.PREFERRED_SIZE)
+										.addComponent(localSettings, Alignment.LEADING, 0, 0, Short.MAX_VALUE))
+									.addContainerGap())
+						);
+						gl_connectionSettings.setVerticalGroup(
+							gl_connectionSettings.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_connectionSettings.createSequentialGroup()
+									.addComponent(remoteSettings, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+									.addPreferredGap(ComponentPlacement.RELATED)
+									.addComponent(localSettings, GroupLayout.PREFERRED_SIZE, 96, GroupLayout.PREFERRED_SIZE)
+									.addPreferredGap(ComponentPlacement.RELATED)
+									.addComponent(connectionControl, GroupLayout.PREFERRED_SIZE, 176, GroupLayout.PREFERRED_SIZE)
+									.addContainerGap(61, Short.MAX_VALUE))
+						);
+						
+						JPanel connectionControlForm = new JPanel();
+						GroupLayout gl_connectionControl = new GroupLayout(connectionControl);
+						gl_connectionControl.setHorizontalGroup(
+							gl_connectionControl.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_connectionControl.createSequentialGroup()
+									.addComponent(connectionControlForm, GroupLayout.PREFERRED_SIZE, 218, GroupLayout.PREFERRED_SIZE)
+									.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+						);
+						gl_connectionControl.setVerticalGroup(
+							gl_connectionControl.createParallelGroup(Alignment.LEADING)
+								.addComponent(connectionControlForm, GroupLayout.DEFAULT_SIZE, 143, Short.MAX_VALUE)
+						);
+						GridBagLayout gbl_connectionControlForm = new GridBagLayout();
+						gbl_connectionControlForm.columnWidths = new int[]{112, 95, 0};
+						gbl_connectionControlForm.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0};
+						gbl_connectionControlForm.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
+						gbl_connectionControlForm.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+						connectionControlForm.setLayout(gbl_connectionControlForm);
+						
+						JLabel connectionStatus = new JLabel("Status:");
+						GridBagConstraints gbc_connectionStatus = new GridBagConstraints();
+						gbc_connectionStatus.fill = GridBagConstraints.HORIZONTAL;
+						gbc_connectionStatus.insets = new Insets(0, 0, 5, 5);
+						gbc_connectionStatus.gridx = 0;
+						gbc_connectionStatus.gridy = 0;
+						connectionControlForm.add(connectionStatus, gbc_connectionStatus);
+						
+						connectionStatus_Get = new JLabel("uninitialized");
+						GridBagConstraints gbc_connectionStatus_Get = new GridBagConstraints();
+						gbc_connectionStatus_Get.insets = new Insets(0, 0, 5, 0);
+						gbc_connectionStatus_Get.fill = GridBagConstraints.HORIZONTAL;
+						gbc_connectionStatus_Get.gridx = 1;
+						gbc_connectionStatus_Get.gridy = 0;
+						connectionControlForm.add(connectionStatus_Get, gbc_connectionStatus_Get);
+						
+						JLabel remoteIPAddress = new JLabel("Remote IP:");
+						GridBagConstraints gbc_remoteIPAddress = new GridBagConstraints();
+						gbc_remoteIPAddress.fill = GridBagConstraints.HORIZONTAL;
+						gbc_remoteIPAddress.insets = new Insets(0, 0, 5, 5);
+						gbc_remoteIPAddress.gridx = 0;
+						gbc_remoteIPAddress.gridy = 1;
+						connectionControlForm.add(remoteIPAddress, gbc_remoteIPAddress);
+						
+						remoteIPAddress_Get = new JLabel("uninitialized");
+						GridBagConstraints gbc_remoteIPAddress_Get = new GridBagConstraints();
+						gbc_remoteIPAddress_Get.fill = GridBagConstraints.HORIZONTAL;
+						gbc_remoteIPAddress_Get.insets = new Insets(0, 0, 5, 0);
+						gbc_remoteIPAddress_Get.gridx = 1;
+						gbc_remoteIPAddress_Get.gridy = 1;
+						connectionControlForm.add(remoteIPAddress_Get, gbc_remoteIPAddress_Get);
+						
+						JLabel remotePort = new JLabel("Remote port:");
+						GridBagConstraints gbc_remotePort = new GridBagConstraints();
+						gbc_remotePort.fill = GridBagConstraints.HORIZONTAL;
+						gbc_remotePort.insets = new Insets(0, 0, 5, 5);
+						gbc_remotePort.gridx = 0;
+						gbc_remotePort.gridy = 2;
+						connectionControlForm.add(remotePort, gbc_remotePort);
+						
+						remotePort_Get = new JLabel("uninitialized");
+						GridBagConstraints gbc_remotePort_Get = new GridBagConstraints();
+						gbc_remotePort_Get.fill = GridBagConstraints.HORIZONTAL;
+						gbc_remotePort_Get.insets = new Insets(0, 0, 5, 0);
+						gbc_remotePort_Get.gridx = 1;
+						gbc_remotePort_Get.gridy = 2;
+						connectionControlForm.add(remotePort_Get, gbc_remotePort_Get);
+						
+						JLabel listener = new JLabel("Launch listener");
+						GridBagConstraints gbc_listener = new GridBagConstraints();
+						gbc_listener.anchor = GridBagConstraints.WEST;
+						gbc_listener.insets = new Insets(0, 0, 5, 5);
+						gbc_listener.gridx = 0;
+						gbc_listener.gridy = 3;
+						connectionControlForm.add(listener, gbc_listener);
+						
+						//Listener btn event
+						listener_btn = new JButton("Launch");
+						listener_btn.addActionListener(new ActionListener() {
+							public void actionPerformed(ActionEvent arg0) {
+								Controller.listener_btn();
+							}
+						});
+						GridBagConstraints gbc_listener_btn = new GridBagConstraints();
+						gbc_listener_btn.insets = new Insets(0, 0, 5, 0);
+						gbc_listener_btn.fill = GridBagConstraints.HORIZONTAL;
+						gbc_listener_btn.gridx = 1;
+						gbc_listener_btn.gridy = 3;
+						connectionControlForm.add(listener_btn, gbc_listener_btn);
+						
+						//Request sending
+						sendRequest_btn = new JButton("Send");
+						sendRequest_btn.addActionListener(new ActionListener() {
+							public void actionPerformed(ActionEvent e) {
+								Controller.sendRequest_btn();
+							}
+						});
+						
+						JLabel sendRequest = new JLabel("Send request");
+						GridBagConstraints gbc_sendRequest = new GridBagConstraints();
+						gbc_sendRequest.anchor = GridBagConstraints.WEST;
+						gbc_sendRequest.insets = new Insets(0, 0, 5, 5);
+						gbc_sendRequest.gridx = 0;
+						gbc_sendRequest.gridy = 4;
+						connectionControlForm.add(sendRequest, gbc_sendRequest);
+						GridBagConstraints gbc_sendRequest_btn = new GridBagConstraints();
+						gbc_sendRequest_btn.insets = new Insets(0, 0, 5, 0);
+						gbc_sendRequest_btn.fill = GridBagConstraints.HORIZONTAL;
+						gbc_sendRequest_btn.gridx = 1;
+						gbc_sendRequest_btn.gridy = 4;
+						connectionControlForm.add(sendRequest_btn, gbc_sendRequest_btn);
+						
+						JLabel remoteDisconnect = new JLabel("Disconnect");
+						GridBagConstraints gbc_remoteDisconnect = new GridBagConstraints();
+						gbc_remoteDisconnect.anchor = GridBagConstraints.WEST;
+						gbc_remoteDisconnect.insets = new Insets(0, 0, 0, 5);
+						gbc_remoteDisconnect.gridx = 0;
+						gbc_remoteDisconnect.gridy = 5;
+						connectionControlForm.add(remoteDisconnect, gbc_remoteDisconnect);
+						
+						remoteDisconnect_btn = new JButton("Disconnect");
+						remoteDisconnect_btn.addActionListener(new ActionListener() {
+							public void actionPerformed(ActionEvent e) {
+								Controller.remoteDisconnect_btn();
+							}
+						});
+						GridBagConstraints gbc_remoteDisconnect_btn = new GridBagConstraints();
+						gbc_remoteDisconnect_btn.fill = GridBagConstraints.HORIZONTAL;
+						gbc_remoteDisconnect_btn.gridx = 1;
+						gbc_remoteDisconnect_btn.gridy = 5;
+						connectionControlForm.add(remoteDisconnect_btn, gbc_remoteDisconnect_btn);
+						connectionControl.setLayout(gl_connectionControl);
+						
+						JPanel localForm = new JPanel();
+						GroupLayout gl_localSettings = new GroupLayout(localSettings);
+						gl_localSettings.setHorizontalGroup(
+							gl_localSettings.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_localSettings.createSequentialGroup()
+									.addComponent(localForm, GroupLayout.DEFAULT_SIZE, 218, Short.MAX_VALUE)
+									.addContainerGap())
+						);
+						gl_localSettings.setVerticalGroup(
+							gl_localSettings.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_localSettings.createSequentialGroup()
+									.addComponent(localForm, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+									.addContainerGap(105, Short.MAX_VALUE))
+						);
+						GridBagLayout gbl_localForm = new GridBagLayout();
+						gbl_localForm.columnWidths = new int[]{78, 135, 0};
+						gbl_localForm.rowHeights = new int[]{15, 21, 23, 0};
+						gbl_localForm.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
+						gbl_localForm.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
+						localForm.setLayout(gbl_localForm);
+						
+						JLabel localPort = new JLabel("Current Port:");
+						GridBagConstraints gbc_localPort = new GridBagConstraints();
+						gbc_localPort.fill = GridBagConstraints.HORIZONTAL;
+						gbc_localPort.insets = new Insets(0, 0, 5, 5);
+						gbc_localPort.gridx = 0;
+						gbc_localPort.gridy = 0;
+						localForm.add(localPort, gbc_localPort);
+						
+						JLabel localPort_Get = new JLabel("Default(1520)");
+						GridBagConstraints gbc_localPort_Get = new GridBagConstraints();
+						gbc_localPort_Get.fill = GridBagConstraints.HORIZONTAL;
+						gbc_localPort_Get.insets = new Insets(0, 0, 5, 0);
+						gbc_localPort_Get.gridx = 1;
+						gbc_localPort_Get.gridy = 0;
+						localForm.add(localPort_Get, gbc_localPort_Get);
+						
+						JLabel localPort_Change = new JLabel("Change port:");
+						GridBagConstraints gbc_localPort_Change = new GridBagConstraints();
+						gbc_localPort_Change.anchor = GridBagConstraints.WEST;
+						gbc_localPort_Change.insets = new Insets(0, 0, 5, 5);
+						gbc_localPort_Change.gridx = 0;
+						gbc_localPort_Change.gridy = 1;
+						localForm.add(localPort_Change, gbc_localPort_Change);
+						
+						localPort_Change_Input = new JTextField();
+						GridBagConstraints gbc_localPort_Change_Input = new GridBagConstraints();
+						gbc_localPort_Change_Input.fill = GridBagConstraints.HORIZONTAL;
+						gbc_localPort_Change_Input.insets = new Insets(0, 0, 5, 0);
+						gbc_localPort_Change_Input.gridx = 1;
+						gbc_localPort_Change_Input.gridy = 1;
+						localForm.add(localPort_Change_Input, gbc_localPort_Change_Input);
+						localPort_Change_Input.setColumns(10);
+						
+						//LocalPort_Change_btn
+						localPort_Change_btn = new JButton("Confirm");
+						localPort_Change_btn.addActionListener(new ActionListener() {
+							public void actionPerformed(ActionEvent arg0) {
+								//LocalPort_Change_btn clicked event
+								swing.Controller.localPort_Change_btn(localPort_Change_Input,localPort_Get,textPane);
+							}
+						});
+						
+								GridBagConstraints gbc_localPort_Change_btn = new GridBagConstraints();
+								gbc_localPort_Change_btn.gridx = 1;
+								gbc_localPort_Change_btn.gridy = 2;
+								localForm.add(localPort_Change_btn, gbc_localPort_Change_btn);
+								localSettings.setLayout(gl_localSettings);
+								
+								JPanel remoteForm = new JPanel();
+								GridBagLayout gbl_remoteForm = new GridBagLayout();
+								gbl_remoteForm.columnWidths = new int[]{72, 135, 0};
+								gbl_remoteForm.rowHeights = new int[]{21, 21, 0, 0};
+								gbl_remoteForm.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
+								gbl_remoteForm.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
+								remoteForm.setLayout(gbl_remoteForm);
+								
+								JLabel remoteIPAddress_Change = new JLabel("IP address:");
+								GridBagConstraints gbc_remoteIPAddress_Change = new GridBagConstraints();
+								gbc_remoteIPAddress_Change.fill = GridBagConstraints.HORIZONTAL;
+								gbc_remoteIPAddress_Change.insets = new Insets(0, 0, 5, 5);
+								gbc_remoteIPAddress_Change.gridx = 0;
+								gbc_remoteIPAddress_Change.gridy = 0;
+								remoteForm.add(remoteIPAddress_Change, gbc_remoteIPAddress_Change);
+								
+								remoteIPAddress_Change_Input = new JTextField();
+								GridBagConstraints gbc_remoteIPAddress_Change_Input = new GridBagConstraints();
+								gbc_remoteIPAddress_Change_Input.fill = GridBagConstraints.HORIZONTAL;
+								gbc_remoteIPAddress_Change_Input.insets = new Insets(0, 0, 5, 0);
+								gbc_remoteIPAddress_Change_Input.gridx = 1;
+								gbc_remoteIPAddress_Change_Input.gridy = 0;
+								remoteForm.add(remoteIPAddress_Change_Input, gbc_remoteIPAddress_Change_Input);
+								remoteIPAddress_Change_Input.setColumns(10);
+								
+								JLabel remotePort_Change = new JLabel("Remote port:");
+								GridBagConstraints gbc_remotePort_Change = new GridBagConstraints();
+								gbc_remotePort_Change.fill = GridBagConstraints.HORIZONTAL;
+								gbc_remotePort_Change.insets = new Insets(0, 0, 5, 5);
+								gbc_remotePort_Change.gridx = 0;
+								gbc_remotePort_Change.gridy = 1;
+								remoteForm.add(remotePort_Change, gbc_remotePort_Change);
+								
+								remotePort_Change_Input = new JTextField();
+								GridBagConstraints gbc_remotePort_Change_Input = new GridBagConstraints();
+								gbc_remotePort_Change_Input.insets = new Insets(0, 0, 5, 0);
+								gbc_remotePort_Change_Input.fill = GridBagConstraints.HORIZONTAL;
+								gbc_remotePort_Change_Input.gridx = 1;
+								gbc_remotePort_Change_Input.gridy = 1;
+								remoteForm.add(remotePort_Change_Input, gbc_remotePort_Change_Input);
+								remotePort_Change_Input.setColumns(10);
+								GroupLayout gl_remoteSettings = new GroupLayout(remoteSettings);
+								gl_remoteSettings.setHorizontalGroup(
+									gl_remoteSettings.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_remoteSettings.createSequentialGroup()
+											.addComponent(remoteForm, GroupLayout.PREFERRED_SIZE, 218, GroupLayout.PREFERRED_SIZE)
+											.addContainerGap())
+								);
+								gl_remoteSettings.setVerticalGroup(
+									gl_remoteSettings.createParallelGroup(Alignment.LEADING)
+										.addComponent(remoteForm, GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
+								);
+								
+								remoteSettings_Change_btn = new JButton("Confirm");
+								remoteSettings_Change_btn.addActionListener(new ActionListener() {
+									public void actionPerformed(ActionEvent arg0) {
+										Controller.remoteSettings_Change_btn();
+									}
+								});
+								GridBagConstraints gbc_remoteSettings_Change_btn = new GridBagConstraints();
+								gbc_remoteSettings_Change_btn.gridx = 1;
+								gbc_remoteSettings_Change_btn.gridy = 2;
+								remoteForm.add(remoteSettings_Change_btn, gbc_remoteSettings_Change_btn);
+								remoteSettings.setLayout(gl_remoteSettings);
+								connectionSettings.setLayout(gl_connectionSettings);
+						
+						JPanel application = new JPanel();
+						tabbedPane.addTab("Application", null, application, null);
 		setBackground(new Color(240, 240, 240));
+	}
+	
+	public void LinkWithController(){
+		
 	}
 }
