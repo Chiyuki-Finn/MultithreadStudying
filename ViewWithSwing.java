@@ -39,6 +39,7 @@ public class ViewWithSwing extends JFrame{
 	public JButton sendRequest_btn;//btn which initiates sender(status 2)
 	public JButton remoteDisconnect_btn;//btn which stops any current operation including listening(status 1), sending(status 2)and connected/communicating(status 3)
 	
+	public JLabel localPort_Get;//label which shows current local port
 	public JLabel connectionStatus_Get;//label which shows current status
 	public JLabel remoteIPAddress_Get;//label which shows current remote IP address
 	public JLabel remotePort_Get;//label which shows current remote port
@@ -253,7 +254,7 @@ public class ViewWithSwing extends JFrame{
 						gbc_localPort.gridy = 0;
 						localForm.add(localPort, gbc_localPort);
 						
-						JLabel localPort_Get = new JLabel("Default(1520)");
+						localPort_Get = new JLabel("Default(1520)");
 						GridBagConstraints gbc_localPort_Get = new GridBagConstraints();
 						gbc_localPort_Get.fill = GridBagConstraints.HORIZONTAL;
 						gbc_localPort_Get.insets = new Insets(0, 0, 5, 0);
@@ -283,7 +284,7 @@ public class ViewWithSwing extends JFrame{
 						localPort_Change_btn.addActionListener(new ActionListener() {
 							public void actionPerformed(ActionEvent arg0) {
 								//LocalPort_Change_btn clicked event
-								swing.Controller.localPort_Change_btn(localPort_Change_Input,localPort_Get,textPane);
+								Controller.localPort_Change_btn();
 							}
 						});
 						

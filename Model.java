@@ -3,18 +3,30 @@ package swing;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 
 public class Model {
 	private static int localPort;
 	//private static String localAddress;
 	private static int remotePort;
 	private static String remoteAddress;
-	private static ServerSocket serverSocket;
-	private static Socket socket;
-	private static Thread sender;
-	private static Thread listener;
+	private static InetSocketAddress remote;
+	//private static ServerSocket serverSocket;
+	private static ServerSocketChannel serverSocketChannel;
+	//private static Socket socket;
+	private static SocketChannel socketChannel;
+	private static Charset charset;
+	
+	private static Thread msgSender_Tr;
+	private static Thread msgListener_Tr;
 	
 	private static int status;
 	/*
@@ -28,17 +40,23 @@ public class Model {
 	
 	private static final String STATUS_ERR="Unknown status error occured.";
 	private static final String CONNECTION_ERR="Unknown connection error occured. Retry connection procedure later.";
+	private static final String INVALID_IP_ERR="Invalid IP address.";
+	private static final String INVALID_PORT_ERR="Invalid port, must be between 1024-65535.";
+	private static final int BYTEBUFFER_CAPACITY=500;
 	
 	public static void initialize(){
 		localPort=1520;
 		remotePort=1520;
 		//localAddress="127.0.0.1";
 		remoteAddress="127.0.0.2";
+		charset=Charset.forName("UTF8");
+		
 		Controller.initialize();				
 		setStatus(0);
 		listMonitor=new ListMonitor();
 		listMonitor.first=null;
 		listMonitor.last=null;
+		remote=new InetSocketAddress(remoteAddress,remotePort);
 		
 		System.out.println("Initialization completed.");
 	}
@@ -47,14 +65,15 @@ public class Model {
 	private static void ConnectionBuilder(){
 		int retry=0;
 		try {
-			serverSocket=new ServerSocket(localPort);
+			serverSocketChannel=ServerSocketChannel.open();
+			socketChannel=SocketChannel.open();
 		} catch (IOException e1) {//test
 			e1.printStackTrace();
 		}
 		while(true){//build up connection
 	        try{//check status before next step
-	            if(status==1)socket=Model.serverSocket.accept();
-	            else if(status==2)socket=new Socket(remoteAddress, remotePort);
+	            if(status==1)socketChannel=Model.serverSocketChannel.accept();
+	            else if(status==2)socketChannel.connect(remote);
 	            else Controller.warningPane(STATUS_ERR, "Status error");
 	            break;
         	} catch (IOException e){
@@ -76,49 +95,106 @@ public class Model {
         			String errorMsg="Remote host \""+ remoteAddress +":"+ remotePort +"\"unreachable";
         			Controller.warningPane(errorMsg, "Connection error");
         			status=1;//reset status
-        			Controller.statusChange(status);
+        			Controller.RefreshView.statusRefresh(status);
         		}
         		else Controller.warningPane(STATUS_ERR, "Status error");
 			}
 	    }
-		if(socket!=null&&socket.isConnected()){
-			setStatus(3);
-			/*
-			 * !!!!!!!!!!!!!!!!!!!!!!!!!!  MsgSender and MsgListener initialize at here  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			 */
+		if(socketChannel.isConnected()){
+			setStatus(3);//initialize msgSender and msgListener
+			MsgSender msgSender=new MsgSender();
+			MsgListener msgListener=new MsgListener();
+			msgSender_Tr=new Thread(msgSender);
+			msgListener_Tr=new Thread(msgListener);
+			msgSender_Tr.start();
+			msgListener_Tr.start();
 		}
 		else Controller.warningPane(CONNECTION_ERR, "Connection error");
 	}
 	
-	private class MsgSender implements Runnable{
+	private static class MsgSender implements Runnable{
+		boolean loopControl=true;
 		public void run() {
-			
+			ByteBuffer byteBuffer=ByteBuffer.allocate(BYTEBUFFER_CAPACITY);
+			while(loopControl){
+				if(!socketChannel.isConnected())Controller.warningPane(CONNECTION_ERR, "Connection error");
+				else if(status!=3)Controller.warningPane(STATUS_ERR, "Status error");
+				else synchronized(socketChannel){
+					try {
+						if(listMonitor.first==null)Thread.sleep(500);//if empty, check 500ms later
+						else{//send all cached strings, then flush
+							String temp=readCache();
+							if(temp.length()<BYTEBUFFER_CAPACITY){
+								byteBuffer=charset.encode(temp);
+								socketChannel.write(byteBuffer);
+							}
+							else {//capacity of bytebuffer is not capable to store all message at one time
+								int splitLength=temp.length()/BYTEBUFFER_CAPACITY+1;
+								for(int i=0,offset=0;i<splitLength;i++){
+									offset=i*BYTEBUFFER_CAPACITY;
+									if(i!=splitLength-1)byteBuffer=charset.encode(temp.substring(offset, offset+BYTEBUFFER_CAPACITY));
+									else byteBuffer=charset.encode(temp.substring(offset, temp.length()));
+									socketChannel.write(byteBuffer);
+								}
+							}
+						}
+					} catch (IOException | InterruptedException e) {
+						e.printStackTrace();//test, may add an IOException control, stop looping when disconnected
+					}
+				}
+			}
 		}
 		
 	}
 	
-	private class MsgListener implements Runnable{
+	private static class MsgListener implements Runnable{
+		boolean loopControl=true;
 		public void run() {
-	        
-			
-			while(true){
-	            System.out.println("Connected:"+socket.getInetAddress()+":"+socket.getPort());
-	            try {
-					BufferedReader incomingMessage=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-				} catch (IOException e) {
-					e.printStackTrace();//test
+			ByteBuffer byteBuffer=ByteBuffer.allocate(BYTEBUFFER_CAPACITY);
+			CharBuffer charBuffer=null;
+			String temp="";
+			int size=0;
+			while(loopControl){
+				if(!socketChannel.isConnected()){
+					Controller.warningPane(CONNECTION_ERR, "Connection error");
+					return;
 				}
-	            String Msg="";
+				else if(status!=3){
+					Controller.warningPane(STATUS_ERR, "Status error");
+					return;
+				}
+				else synchronized(socketChannel){
+					try {
+						size=socketChannel.read(byteBuffer);
+						while(size!=-1)//reading
+						{
+							byteBuffer.flip();
+							while(byteBuffer.hasRemaining())
+							{
+								charBuffer=charset.decode(byteBuffer);
+								temp+=charBuffer.toString();
+								//System.out.println(charBuffer);
+							}
+							byteBuffer.clear();
+							size=socketChannel.read(byteBuffer);
+						}
+					} catch (IOException e) {
+						e.printStackTrace();//test, may add an IOException control, stop looping when disconnected
+					}
+				}
+
+				System.out.println(temp);//test
+				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      callback method is at here      !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			}
 		}
 		
 	}
 	
 	
-	//internal tools
+	// tools
 	private static void setStatus(int status){
 		Model.status=status;
-		Controller.statusChange(Model.status);
+		Controller.RefreshView.statusRefresh(Model.status);
 	}
 	
 	private static String readCache(){
@@ -163,13 +239,24 @@ public class Model {
 		}
 	}
 	
-	public static void setPort(boolean isLocal,int port){//method for setting port numbers
-		if(isLocal)localPort=port;
-		else remotePort=port;
+	public static void setLocalPort(String port){//method for setting port numbers
+		if(!checkPortInput(port))return;
+		localPort=Integer.parseInt(port);
+		err
+	}
+	
+	public static void setRemoteSocket(String IPAddress,String port){//set new remote InetSocketAddress
+		boolean checkInetAddress=checkIPInput(IPAddress)&&checkPortInput(port);
+		if(!checkInetAddress)return;//check
+		remoteAddress=IPAddress;//change
+		remotePort=Integer.parseInt(port);
+		remote=new InetSocketAddress(remoteAddress,remotePort);
+		//refresh view
+		err
 	}
 	
 	
-	//external tools
+	//tools
 	public static boolean checkPortInput(String str){//Input check
 		int portNumber;
 		//Check whether input is an integer or not
@@ -177,14 +264,25 @@ public class Model {
 			portNumber=Integer.parseInt(str);
 		}
 		catch(Exception e){
-			Controller.warningPane("Invalid input", "Input error");
+			Controller.warningPane(INVALID_PORT_ERR, "Input error");
 			return false;
 		}
 		
 		//Check whether valid port number
 		if(portNumber>=1024 && portNumber<=65535)return true;
 		else{
-			Controller.warningPane("Invalid port number(must between 1024-65535)", "Input error");
+			Controller.warningPane(INVALID_PORT_ERR, "Input error");
+			return false;
+		}
+	}
+	
+	public static boolean checkIPInput(String str){
+		String regexIP=new String("(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)");
+		if(str.matches(regexIP)){
+			return true;
+		}
+		else{
+			Controller.warningPane(INVALID_IP_ERR, "Input error");
 			return false;
 		}
 	}
