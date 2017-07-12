@@ -136,7 +136,7 @@ public class ViewWithSwing extends JFrame{
 						gbc_remoteIPAddress.gridy = 1;
 						connectionControlForm.add(remoteIPAddress, gbc_remoteIPAddress);
 						
-						remoteIPAddress_Get = new JLabel("uninitialized");
+						remoteIPAddress_Get = new JLabel("127.0.0.1");
 						GridBagConstraints gbc_remoteIPAddress_Get = new GridBagConstraints();
 						gbc_remoteIPAddress_Get.fill = GridBagConstraints.HORIZONTAL;
 						gbc_remoteIPAddress_Get.insets = new Insets(0, 0, 5, 0);
@@ -152,7 +152,7 @@ public class ViewWithSwing extends JFrame{
 						gbc_remotePort.gridy = 2;
 						connectionControlForm.add(remotePort, gbc_remotePort);
 						
-						remotePort_Get = new JLabel("uninitialized");
+						remotePort_Get = new JLabel("1520");
 						GridBagConstraints gbc_remotePort_Get = new GridBagConstraints();
 						gbc_remotePort_Get.fill = GridBagConstraints.HORIZONTAL;
 						gbc_remotePort_Get.insets = new Insets(0, 0, 5, 0);

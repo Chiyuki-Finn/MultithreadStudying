@@ -11,13 +11,21 @@ public class Controller {
 		windowEntity.setSize(512, 502);
 		windowEntity.setVisible(true);
 		windowEntity.setLocation(1920/2-windowEntity.getHeight()/2, 1080/2-windowEntity.getWidth()/2);//1920*1080should be change into screen size
-		
+		windowEntity.remoteIPAddress_Change_Input.setText("127.0.0.1");
+		windowEntity.remotePort_Change_Input.setText("1520");
 	}
 	
 	
 	//public tools
 	public static void warningPane(String message, String title){
-		JOptionPane.showMessageDialog(null, message, title, JOptionPane.PLAIN_MESSAGE);
+		Thread warning=new Thread(
+				new Runnable(){
+					public void run(){
+						JOptionPane.showMessageDialog(null, message, title, JOptionPane.PLAIN_MESSAGE);
+						}
+					}
+				);
+		warning.start();
 		/*
 		 * print module should be added later
 		 */
@@ -27,14 +35,16 @@ public class Controller {
 	public static class RefreshView{
 		public static void localPortRefresh(String port){
 			windowEntity.localPort_Get.setText(port);
-			String temp="<-info: New local port set:"+ port +" ->\n";
+			String temp="<-info: New local port set:"+ port +" ->";
 			appendToText(temp);
 		}
 		
-		public static void remoteInetSocketAddressRefresh(String IP, String port){
+		public static void remoteInetSocketAddressRefresh(String IP, String port, boolean isConnected){
 			windowEntity.remotePort_Get.setText(port);
 			windowEntity.remoteIPAddress_Get.setText(IP);
-			String temp="<-info: New remote address set:"+ IP +":"+ port +" ->\n";
+			String temp;
+			if(!isConnected)temp="<-info: New remote address set: "+ IP +":"+ port +" ->";
+			else temp="<-info: Connected with remote address: "+ IP +":"+ port +" ->";
 			appendToText(temp);
 		}
 		
@@ -46,6 +56,8 @@ public class Controller {
 				windowEntity.sendRequest_btn.setEnabled(true);
 				windowEntity.remoteDisconnect_btn.setEnabled(false);
 				windowEntity.connectionStatus_Get.setText("Disconnected");
+				String temp="<-info: Ready to connect. ->";
+				appendToText(temp);
 			}
 			else if(newStatus==1){
 				windowEntity.remoteSettings_Change_btn.setEnabled(true);
@@ -54,7 +66,7 @@ public class Controller {
 				windowEntity.sendRequest_btn.setEnabled(true);
 				windowEntity.remoteDisconnect_btn.setEnabled(true);
 				windowEntity.connectionStatus_Get.setText("Listening");
-				String temp="<-info: Switch to listening mode. ->\n";
+				String temp="<-info: Switch to listening mode. ->";
 				appendToText(temp);
 			}
 			else if(newStatus==2){
@@ -64,7 +76,7 @@ public class Controller {
 				windowEntity.sendRequest_btn.setEnabled(false);
 				windowEntity.remoteDisconnect_btn.setEnabled(true);
 				windowEntity.connectionStatus_Get.setText("Sending");
-				String temp="<-info: Switch to sending mode. ->\n";
+				String temp="<-info: Switch to sending mode. ->";
 				appendToText(temp);
 			}
 			else{
@@ -107,16 +119,17 @@ public class Controller {
 	}
 	
 	public static void listener_btn(){
-		RefreshView.statusRefresh(1);//test
-		//Model.PortListening();
+		//RefreshView.statusRefresh(1);//test
+		Model.portListening();
 	}
 	
 	public static void sendRequest_btn(){
-		RefreshView.statusRefresh(2);//test
-		//Model.SendRequest();
+		//RefreshView.statusRefresh(2);//test
+		Model.sendRequest();
 	}
 	
 	public static void remoteDisconnect_btn(){
-		RefreshView.statusRefresh(0);//test
+		//RefreshView.statusRefresh(0);//test
+		Model.disconnect();
 	}	
 }
