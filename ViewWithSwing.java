@@ -1,8 +1,7 @@
-package swing;
+package mainPackage;
 import javax.swing.JFrame;
 import java.awt.Color;
 import javax.swing.UIManager;
-import java.awt.Toolkit;
 import javax.swing.JTextPane;
 import javax.swing.JTextField;
 import javax.swing.JLabel;
@@ -10,34 +9,36 @@ import javax.swing.JPanel;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
-import java.awt.GridLayout;
 import javax.swing.JButton;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
 
 public class ViewWithSwing extends JFrame{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;//test
+
 	public JTextPane textPane;
 	
 	public JTextField remoteIPAddress_Change_Input;
 	public JTextField remotePort_Change_Input;
 	public JTextField localPort_Change_Input;
+	public JTextArea MsgArea;
 	
 	public JButton remoteSettings_Change_btn;//btn that click to confirm changes about remote IP and port
 	public JButton localPort_Change_btn;//btn that click to confirm changes about local port
 	public JButton listener_btn;//btn which initiates listener(status 1)
 	public JButton sendRequest_btn;//btn which initiates sender(status 2)
 	public JButton remoteDisconnect_btn;//btn which stops any current operation including listening(status 1), sending(status 2)and connected/communicating(status 3)
+	public JButton TextInput_Send_btn;//btn which controls message sending
 	
 	public JLabel localPort_Get;//label which shows current local port
 	public JLabel connectionStatus_Get;//label which shows current status
@@ -45,17 +46,21 @@ public class ViewWithSwing extends JFrame{
 	public JLabel remotePort_Get;//label which shows current remote port
 	
 	public ViewWithSwing() {
-		setTitle("Title");
+		setTitle("Remote Messager");
 		getContentPane().setBackground(UIManager.getColor("Button.background"));
 		getContentPane().setLayout(null);
 		
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		//JTextPane TextPane = new JTextPane();
 		textPane = new JTextPane();
-		textPane.setBounds(10, 10, 236, 444);
-		getContentPane().add(textPane);
+		//textPane.setBounds(10, 10, 236, 444);
+		JScrollPane textDisplayScrollPane = new JScrollPane(textPane);
+		textDisplayScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED); 
+		textDisplayScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); 
+		textDisplayScrollPane.setBounds(10, 10, 236, 444);
+		getContentPane().add(textDisplayScrollPane);
 						
+		
 						JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 						tabbedPane.setBounds(256, 10, 230, 443);
 						getContentPane().add(tabbedPane);
@@ -77,9 +82,9 @@ public class ViewWithSwing extends JFrame{
 							gl_connectionSettings.createParallelGroup(Alignment.TRAILING)
 								.addGroup(gl_connectionSettings.createSequentialGroup()
 									.addGroup(gl_connectionSettings.createParallelGroup(Alignment.TRAILING)
+										.addComponent(localSettings, Alignment.LEADING, 0, 0, Short.MAX_VALUE)
 										.addComponent(connectionControl, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 230, Short.MAX_VALUE)
-										.addComponent(remoteSettings, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 230, GroupLayout.PREFERRED_SIZE)
-										.addComponent(localSettings, Alignment.LEADING, 0, 0, Short.MAX_VALUE))
+										.addComponent(remoteSettings, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 230, GroupLayout.PREFERRED_SIZE))
 									.addContainerGap())
 						);
 						gl_connectionSettings.setVerticalGroup(
@@ -87,10 +92,10 @@ public class ViewWithSwing extends JFrame{
 								.addGroup(gl_connectionSettings.createSequentialGroup()
 									.addComponent(remoteSettings, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(localSettings, GroupLayout.PREFERRED_SIZE, 96, GroupLayout.PREFERRED_SIZE)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(connectionControl, GroupLayout.PREFERRED_SIZE, 176, GroupLayout.PREFERRED_SIZE)
-									.addContainerGap(61, Short.MAX_VALUE))
+									.addComponent(localSettings, GroupLayout.PREFERRED_SIZE, 104, GroupLayout.PREFERRED_SIZE)
+									.addPreferredGap(ComponentPlacement.UNRELATED)
+									.addComponent(connectionControl, GroupLayout.DEFAULT_SIZE, 185, Short.MAX_VALUE)
+									.addContainerGap())
 						);
 						
 						JPanel connectionControlForm = new JPanel();
@@ -236,8 +241,8 @@ public class ViewWithSwing extends JFrame{
 						gl_localSettings.setVerticalGroup(
 							gl_localSettings.createParallelGroup(Alignment.LEADING)
 								.addGroup(gl_localSettings.createSequentialGroup()
-									.addComponent(localForm, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-									.addContainerGap(105, Short.MAX_VALUE))
+									.addComponent(localForm, GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE)
+									.addContainerGap())
 						);
 						GridBagLayout gbl_localForm = new GridBagLayout();
 						gbl_localForm.columnWidths = new int[]{78, 135, 0};
@@ -360,8 +365,29 @@ public class ViewWithSwing extends JFrame{
 								remoteSettings.setLayout(gl_remoteSettings);
 								connectionSettings.setLayout(gl_connectionSettings);
 						
-						JPanel application = new JPanel();
-						tabbedPane.addTab("Application", null, application, null);
+						JPanel MsgSending = new JPanel();
+						tabbedPane.addTab("Message", null, MsgSending, null);
+						MsgSending.setLayout(null);
+						
+						TextInput_Send_btn = new JButton("send");
+						TextInput_Send_btn.addActionListener(new ActionListener() {
+							public void actionPerformed(ActionEvent arg0) {
+								Controller.TextInput_Send_btn();
+							}
+						});
+						TextInput_Send_btn.setBounds(67, 233, 93, 23);
+						MsgSending.add(TextInput_Send_btn);
+						
+						MsgArea = new JTextArea();
+						//MsgArea.setBounds(10, 10, 187, 213);
+						MsgArea.setLineWrap(true);//auto Line Wrap
+						//MsgArea.setWrapStyleWord(true);
+						JScrollPane TextInputScrollPane = new JScrollPane(MsgArea);
+						//TextInputScrollPane.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED); 
+						TextInputScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED); 
+						TextInputScrollPane.setBounds(10, 10, 205, 213);
+						MsgSending.add(TextInputScrollPane);
+												
 		setBackground(new Color(240, 240, 240));
 	}
 	

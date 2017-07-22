@@ -1,4 +1,4 @@
-package swing;
+package mainPackage;
 
 import javax.swing.*;
 
@@ -55,6 +55,7 @@ public class Controller {
 				windowEntity.listener_btn.setEnabled(true);
 				windowEntity.sendRequest_btn.setEnabled(true);
 				windowEntity.remoteDisconnect_btn.setEnabled(false);
+				windowEntity.TextInput_Send_btn.setEnabled(false);
 				windowEntity.connectionStatus_Get.setText("Disconnected");
 				String temp="<-info: Ready to connect. ->";
 				appendToText(temp);
@@ -65,6 +66,7 @@ public class Controller {
 				windowEntity.listener_btn.setEnabled(false);
 				windowEntity.sendRequest_btn.setEnabled(true);
 				windowEntity.remoteDisconnect_btn.setEnabled(true);
+				windowEntity.TextInput_Send_btn.setEnabled(false);
 				windowEntity.connectionStatus_Get.setText("Listening");
 				String temp="<-info: Switch to listening mode. ->";
 				appendToText(temp);
@@ -75,6 +77,7 @@ public class Controller {
 				windowEntity.listener_btn.setEnabled(false);
 				windowEntity.sendRequest_btn.setEnabled(false);
 				windowEntity.remoteDisconnect_btn.setEnabled(true);
+				windowEntity.TextInput_Send_btn.setEnabled(false);
 				windowEntity.connectionStatus_Get.setText("Sending");
 				String temp="<-info: Switch to sending mode. ->";
 				appendToText(temp);
@@ -85,21 +88,22 @@ public class Controller {
 				windowEntity.listener_btn.setEnabled(false);
 				windowEntity.sendRequest_btn.setEnabled(false);
 				windowEntity.remoteDisconnect_btn.setEnabled(true);
+				windowEntity.TextInput_Send_btn.setEnabled(true);
 				windowEntity.connectionStatus_Get.setText("Connected");
 			}
 		}
 	}
 	
-	public static void newMessage(String str,boolean isRemote){
+	public static void newMessage(String newMsg,boolean isRemote){
 		String temp="";
-		if(isRemote)temp="Remote:"+ str +"\n";
-		else temp="Loacal:"+ str + "\n";
+		if(isRemote)temp="Remote:"+ newMsg ;
+		else temp="Loacal:"+ newMsg ;
 		appendToText(temp);
 	}
 	
 	
 	//controller tools	
-	public static void appendToText(String str){
+	private static void appendToText(String str){
 		str=windowEntity.textPane.getText()+str+"\n";
 		windowEntity.textPane.setText(str);
 		return;
@@ -131,5 +135,11 @@ public class Controller {
 	public static void remoteDisconnect_btn(){
 		//RefreshView.statusRefresh(0);//test
 		Model.disconnect();
-	}	
+	}
+	
+	public static void TextInput_Send_btn(){
+		String newMsg=windowEntity.MsgArea.getText();
+		Model.addCacheObj(newMsg);
+		windowEntity.MsgArea.setText("");
+	}
 }

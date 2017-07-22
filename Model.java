@@ -1,9 +1,6 @@
-package swing;
+package mainPackage;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +10,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 
-import swing.Controller.RefreshView;
+import mainPackage.Controller.RefreshView;
 
 public class Model {
 	private static int localPort;
@@ -54,6 +51,7 @@ public class Model {
 	private static final String INVALID_IP_ERR="Invalid IP address.";
 	private static final String INVALID_PORT_ERR="Invalid port, must be between 1024-65535.";
 	private static final int BYTEBUFFER_CAPACITY=500;
+	private static final long SYNCHRONIZE_TIMEOUT=500;
 	
 	public static void initialize(){
 		localPort=1520;
@@ -80,6 +78,7 @@ public class Model {
 			int retry=0;
 			Socket socket = null;
 			ServerSocket serverSocket=null;
+			do{
 			try {
 				serverSocketChannel=ServerSocketChannel.open();
 				serverSocketChannel.bind(new InetSocketAddress("127.0.0.1", localPort));
@@ -89,9 +88,16 @@ public class Model {
 				socketChannel=SocketChannel.open();
 				//socketChannel.configureBlocking(false);
 				socket=socketChannel.socket();
-			} catch (IOException e1) {//test
-				e1.printStackTrace();
+				break;
+			} catch (java.net.BindException e1) {//change localPort if the current localPort is being used
+				System.out.println("java.net.BindException: Address already in use: bind. Switched to new localPort");
+				localPort++;
+				RefreshView.localPortRefresh(localPort+"");
+				
+			} catch (IOException e) {//test
+				e.printStackTrace();
 			}
+			}while(true);
 			connectionControl=true;
 			while(true){//build up connection
 				if(!connectionControl){//Interrupt
@@ -107,7 +113,7 @@ public class Model {
 		            break;
 	        	} catch (IOException e){
 	        		if(status==1)/*try {*/
-	        			System.out.println("trying...");//test
+	        			System.out.println("listening...");//test
 	        			//since serverSocket will time out, no need to set Thread.sleep
 	        		else if(status==2&&retry<15){//listener can retry unlimited times, but sender can only retry 20 times for each send order
 	        			try {
@@ -162,16 +168,14 @@ public class Model {
 			System.out.println("Maintaining");//test
 			while(true){
 				synchronized(socketChannel){
-					System.out.println("Controller got socket channel. Connected:"+socketChannel.isConnected()+" ; blocked"+socketChannel.isBlocking());
+					//System.out.println("Controller got socket channel. Connected:"+socketChannel.isConnected()+" ; blocked"+socketChannel.isBlocking());//test
 					if(!connectionControl||bufferSize==-1){//if connectionControl is false, this thread will stop sender and listener
-						System.out.println("closed1");
 						reinitialize();
-						System.out.println("closed2");
 						break;
 					}
 					//socketChannel.notifyAll();
 					try {
-						socketChannel.wait(2000);
+						socketChannel.wait(SYNCHRONIZE_TIMEOUT);
 					} catch (InterruptedException e) {
 						e.printStackTrace();//test
 					}
@@ -186,14 +190,15 @@ public class Model {
 			ByteBuffer byteBuffer=ByteBuffer.allocate(BYTEBUFFER_CAPACITY);
 			msgSenderControl=true;//
 			while(msgSenderControl){
-				System.out.println("sender is waiting for channel.S/L/G:"+msgSenderControl+","+msgListenerControl+","+connectionControl);//test
+				//System.out.println("sender is waiting for channel.S/L/G:"+msgSenderControl+","+msgListenerControl+","+connectionControl);//test
 				if(!socketChannel.isConnected())Controller.warningPane(CONNECTION_ERR, "Connection error");
 				else if(status!=3)Controller.warningPane(STATUS_ERR, "Status error");
 				else synchronized(socketChannel){
 					try {
-						System.out.println("sender get socket channel");
+						//System.out.println("sender get socket channel");//test
+						String temp;
 						if(linkedList.first!=null){//send all cached strings, then flush
-							String temp=readCache();
+							temp=readCache();
 							if(temp.length()<BYTEBUFFER_CAPACITY){
 								byteBuffer=charset.encode(temp);
 								socketChannel.write(byteBuffer);
@@ -207,10 +212,11 @@ public class Model {
 									socketChannel.write(byteBuffer);
 								}
 							}
+							Controller.newMessage(temp, false);//callback
 						}
 						//if linkedList.first==null, nothing needs to be done
 						//socketChannel.notifyAll();
-						socketChannel.wait(2000);
+						socketChannel.wait(SYNCHRONIZE_TIMEOUT);
 					} catch (IOException e) {
 						connectionControl=false;//stop looping when disconnected, this may happened when remote disconnected accidentally or manually
 						System.out.println("sender found disconnection");
@@ -221,7 +227,7 @@ public class Model {
 					}
 				}
 			}
-			System.out.println("sender return");//test
+			//System.out.println("sender return");//test
 		}
 		
 	}
@@ -230,10 +236,8 @@ public class Model {
 		public void run() {
 			ByteBuffer byteBuffer=ByteBuffer.allocate(BYTEBUFFER_CAPACITY);
 			CharBuffer charBuffer=null;
-			String temp="";
 			msgListenerControl=true;
 			while(msgListenerControl){
-				System.out.println("listener waiting for socket channel.S/L/G:"+msgSenderControl+","+msgListenerControl+","+connectionControl);
 				if(!socketChannel.isConnected()){
 					Controller.warningPane(CONNECTION_ERR, "Connection error");
 					return;
@@ -244,46 +248,47 @@ public class Model {
 				}
 					
 				else synchronized(socketChannel){
-					System.out.println("listener get socket channel");
+					//System.out.println("listener get socket channel");//test
 					try {
+
+						String temp="";
 						bufferSize=socketChannel.read(byteBuffer);
-						System.out.println("listener size"+ bufferSize);
-						while(bufferSize>0)//reading
-						{
-							byteBuffer.flip();
-							while(byteBuffer.hasRemaining())
+						//System.out.println("listener size"+ bufferSize);//test
+						if(bufferSize>0){
+							while(bufferSize>0)//reading
 							{
-								charBuffer=charset.decode(byteBuffer);
-								temp+=charBuffer.toString();
-								//System.out.println(charBuffer);
+								byteBuffer.flip();
+								while(byteBuffer.hasRemaining())
+								{
+									charBuffer=charset.decode(byteBuffer);
+									temp+=charBuffer.toString();
+									//System.out.println(charBuffer);
+								}
+								byteBuffer.clear();
+								bufferSize=socketChannel.read(byteBuffer);
 							}
-							byteBuffer.clear();
-							bufferSize=socketChannel.read(byteBuffer);
+							Controller.newMessage(temp, true);//callback
+							//System.out.println(temp);//test
 						}
 						//socketChannel.notifyAll();
-						socketChannel.wait(2000);
+						socketChannel.wait(SYNCHRONIZE_TIMEOUT);
 						//try reading, if size==0 ,wait		
 					} catch (IOException e) {
 						connectionControl=false;//stop looping when disconnected, this may happened when remote disconnected accidentally or manually
-						System.out.println("listener found disconnection");
+						//System.out.println("listener found disconnection");//test
 						break;
 						//e.printStackTrace();//test
 					} catch (InterruptedException e) {
 						e.printStackTrace();//test
 					}
 				}
-				
-
-				System.out.println(temp);//test
-				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      callback method is at here      !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				
-				try {
+				/*try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
-				}
+				}*/
 			}
-			System.out.println("listener return");//test
+			//System.out.println("listener return");//test
 		}
 		
 	}
@@ -327,15 +332,16 @@ public class Model {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();//test
-		}//in case of some threads haven't finished
+		}//in case of some threads haven't exit
 	}
 
 	private static String readCache(){
 		String result="";
 		synchronized(linkedList){
 			while(linkedList.first!=null){
-				result+=linkedList.first.message+"\n";
+				result+=linkedList.first.message;
 				linkedList.first=linkedList.first.next;
+				if(linkedList.first!=null)result+="\n";
 				//dispose current cache, and link the linkedList.first pointer to the next cache
 				//and if linkedList.first.next is null, the loop will be stopped at the beginning of next round
 			}
@@ -343,6 +349,41 @@ public class Model {
 		}
 		return result;
 	}
+	
+	private static boolean checkPortInput(String str){//Input check
+		int portNumber;
+		//Check whether input is an integer or not
+		try{
+			portNumber=Integer.parseInt(str);
+		}
+		catch(Exception e){
+			Controller.warningPane(INVALID_PORT_ERR, "Input error");
+			return false;
+		}
+		//Check whether valid port number
+		if(portNumber>=1024 && portNumber<=65535)return true;
+		else{
+			Controller.warningPane(INVALID_PORT_ERR, "Input error");
+			return false;
+		}
+	}
+	
+	private static boolean checkIPInput(String str){
+		String regexIP=new String("(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)");
+		if(str.matches(regexIP)){
+			return true;
+		}
+		else{
+			Controller.warningPane(INVALID_IP_ERR, "Input error");
+			return false;
+		}
+	}
+	
+	private static boolean msgIsEmptyString(String Msg){
+		if(Msg.equals(""))return true;
+		else return false;
+	}
+	
 	
 	//external interfaces
 	public static void portListening(){//set status 1, and create a server socket to wait for connection requests
@@ -373,12 +414,13 @@ public class Model {
 	
 	public static void disconnect(){
 		connectionControl=false;
-		System.out.println("click"+connectionControl);
+		//System.out.println("click"+connectionControl);//test
 	}
 	
 	
 
 	public static void addCacheObj(String newMsg){
+		if(msgIsEmptyString(newMsg))return;//no need to send an empty string
 		synchronized(linkedList){
 			if(linkedList.last!=null){
 				linkedList.last.next=new CacheObj(newMsg);//update last cache to the latest one
@@ -407,36 +449,6 @@ public class Model {
 		RefreshView.remoteInetSocketAddressRefresh(IPAddress, port, false);
 	}
 	
-	
-	//tools
-	public static boolean checkPortInput(String str){//Input check
-		int portNumber;
-		//Check whether input is an integer or not
-		try{
-			portNumber=Integer.parseInt(str);
-		}
-		catch(Exception e){
-			Controller.warningPane(INVALID_PORT_ERR, "Input error");
-			return false;
-		}
-		//Check whether valid port number
-		if(portNumber>=1024 && portNumber<=65535)return true;
-		else{
-			Controller.warningPane(INVALID_PORT_ERR, "Input error");
-			return false;
-		}
-	}
-	
-	public static boolean checkIPInput(String str){
-		String regexIP=new String("(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d)");
-		if(str.matches(regexIP)){
-			return true;
-		}
-		else{
-			Controller.warningPane(INVALID_IP_ERR, "Input error");
-			return false;
-		}
-	}
 }
 
 
